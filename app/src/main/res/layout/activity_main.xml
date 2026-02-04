@@ -1,0 +1,102 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:padding="24dp"
+    android:gravity="center_horizontal">
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="SSO Service"
+        android:textSize="28sp"
+        android:textStyle="bold"
+        android:layout_marginBottom="32dp" />
+
+    <!-- Service Status -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:layout_marginBottom="16dp">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Service Status: "
+            android:textSize="16sp" />
+
+        <TextView
+            android:id="@+id/tvServiceStatus"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Checking..."
+            android:textSize="16sp"
+            android:textStyle="bold" />
+    </LinearLayout>
+
+    <!-- Active Account -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:layout_marginBottom="16dp">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Active Account: "
+            android:textSize="16sp" />
+
+        <TextView
+            android:id="@+id/tvActiveAccount"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="None"
+            android:textSize="16sp"
+            android:textStyle="bold" />
+    </LinearLayout>
+
+    <!-- Total Accounts -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:layout_marginBottom="32dp">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Total Accounts: "
+            android:textSize="16sp" />
+
+        <TextView
+            android:id="@+id/tvTotalAccounts"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="0"
+            android:textSize="16sp"
+            android:textStyle="bold" />
+    </LinearLayout>
+
+    <!-- Refresh Button -->
+    <Button
+        android:id="@+id/btnRefresh"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Refresh Status"
+        android:layout_marginBottom="16dp" />
+
+    <!-- Status indicator -->
+    <View
+        android:id="@+id/statusIndicator"
+        android:layout_width="16dp"
+        android:layout_height="16dp"
+        android:background="@android:color/holo_red_dark"
+        android:layout_marginTop="16dp" />
+
+</LinearLayout>
