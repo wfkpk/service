@@ -20,23 +20,29 @@ import com.example.ssoapi.sso
  */
 class MainActivity : AppCompatActivity() {
 
+    companion object {
+        private const val TAG = "MainActivity"
+    }
+
     private lateinit var tvServiceStatus: TextView
     private lateinit var tvActiveAccount: TextView
     private lateinit var tvTotalAccounts: TextView
     private lateinit var btnRefresh: Button
-    private lateinit var statusIndicator: View
+    private lateinit var tvStatusIndicator: View
 
     private var ssoService: sso? = null
     private var isBound = false
 
     private val serviceConnection = object : ServiceConnection {
         override fun onServiceConnected(name: ComponentName?, service: IBinder?) {
+            android.util.Log.d(TAG, "onServiceConnected() called")
             ssoService = sso.Stub.asInterface(service)
             isBound = true
             updateStatus()
         }
 
         override fun onServiceDisconnected(name: ComponentName?) {
+            android.util.Log.d(TAG, "onServiceDisconnected() called")
             ssoService = null
             isBound = false
             updateServiceStatusUI(false)
@@ -51,7 +57,7 @@ class MainActivity : AppCompatActivity() {
         tvActiveAccount = findViewById(R.id.tvActiveAccount)
         tvTotalAccounts = findViewById(R.id.tvTotalAccounts)
         btnRefresh = findViewById(R.id.btnRefresh)
-        statusIndicator = findViewById(R.id.statusIndicator)
+        tvStatusIndicator = findViewById(R.id.statusIndicator)
 
         btnRefresh.setOnClickListener {
             refreshStatus()
@@ -114,24 +120,31 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun updateStatus() {
+        android.util.Log.d(TAG, "updateStatus() called, isBound=$isBound")
         val running = isServiceRunning()
         updateServiceStatusUI(running)
 
         if (isBound && ssoService != null) {
             try {
                 // Get active account
+                android.util.Log.d(TAG, "updateStatus() getting active account")
                 val activeAccount = ssoService?.activeAccount
                 if (activeAccount != null) {
-                    tvActiveAccount.text = activeAccount.email
+                    android.util.Log.d(TAG, "updateStatus() active account: ${activeAccount.mail}")
+                    tvActiveAccount.text = activeAccount.mail
                 } else {
+                    android.util.Log.d(TAG, "updateStatus() no active account")
                     tvActiveAccount.text = "None"
                 }
 
                 // Get total accounts
+                android.util.Log.d(TAG, "updateStatus() getting all accounts")
                 val allAccounts = ssoService?.allAccounts
+                android.util.Log.d(TAG, "updateStatus() got ${allAccounts?.size ?: 0} accounts")
                 tvTotalAccounts.text = (allAccounts?.size ?: 0).toString()
 
             } catch (e: Exception) {
+                android.util.Log.e(TAG, "updateStatus() error", e)
                 tvActiveAccount.text = "Error"
                 tvTotalAccounts.text = "Error"
             }
@@ -142,11 +155,11 @@ class MainActivity : AppCompatActivity() {
         if (running) {
             tvServiceStatus.text = "Running"
             tvServiceStatus.setTextColor(Color.parseColor("#4CAF50")) // Green
-            statusIndicator.setBackgroundColor(Color.parseColor("#4CAF50"))
+            tvStatusIndicator.setBackgroundColor(Color.parseColor("#4CAF50"))
         } else {
             tvServiceStatus.text = "Stopped"
             tvServiceStatus.setTextColor(Color.parseColor("#F44336")) // Red
-            statusIndicator.setBackgroundColor(Color.parseColor("#F44336"))
+            tvStatusIndicator.setBackgroundColor(Color.parseColor("#F44336"))
         }
     }
 }

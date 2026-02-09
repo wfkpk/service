@@ -5,7 +5,7 @@ import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
 
-@Database(entities = [AccountEntity::class], version = 1, exportSchema = false)
+@Database(entities = [AccountEntity::class], version = 2, exportSchema = false)
 abstract class AccountDatabase : RoomDatabase() {
 
     abstract fun accountDao(): AccountDao
@@ -20,7 +20,9 @@ abstract class AccountDatabase : RoomDatabase() {
                     context.applicationContext,
                     AccountDatabase::class.java,
                     "account_database"
-                ).build()
+                )
+                    .fallbackToDestructiveMigration()
+                    .build()
                 INSTANCE = instance
                 instance
             }

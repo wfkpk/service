@@ -48,6 +48,9 @@ dependencies {
     // Coroutines
     implementation(libs.coroutines.android)
     implementation(libs.coroutines.jdk8)
+
+    // OkHttp
+    implementation(libs.okhttp)
     
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)

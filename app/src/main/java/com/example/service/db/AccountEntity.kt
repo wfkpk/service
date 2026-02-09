@@ -6,17 +6,16 @@ import com.example.ssoapi.Account
 
 @Entity(tableName = "accounts")
 data class AccountEntity(
-    @PrimaryKey val id: String,
-    val email: String,
-    val name: String,
+    @PrimaryKey val guid: String,
+    val mail: String,
+    val profileImage: String?,
+    val sessionToken: String,
     val isActive: Boolean = false
 ) {
-    // Convert to AIDL Account
-    fun toAccount(): Account = Account(id, email, name, isActive)
+    fun toAccount(): Account = Account(guid, mail, profileImage, sessionToken, isActive)
 
     companion object {
-        // Convert from AIDL Account
         fun fromAccount(account: Account): AccountEntity =
-            AccountEntity(account.id, account.email, account.name, account.isActive)
+            AccountEntity(account.guid, account.mail, account.profileImage, account.sessionToken, account.isActive)
     }
 }
