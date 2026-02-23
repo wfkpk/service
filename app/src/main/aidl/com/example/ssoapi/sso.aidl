@@ -3,9 +3,10 @@ package com.example.ssoapi;
 
 import com.example.ssoapi.Account;
 import com.example.ssoapi.IAuthCallback;
+import com.example.ssoapi.SaResultData;
 
 interface sso {
-    void login(String mail, String password, IAuthCallback callback);
+    SaResultData login(String mail, String password, IAuthCallback callback);
     void register(String mail, String password, IAuthCallback callback);
     void logout(String guid);
     void logoutAll();

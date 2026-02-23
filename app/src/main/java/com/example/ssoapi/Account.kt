@@ -12,11 +12,11 @@ data class Account(
 ) : Parcelable {
 
     constructor(parcel: Parcel) : this(
-        guid = parcel.readString() ?: "",
-        mail = parcel.readString() ?: "",
+        guid         = parcel.readString() ?: "",
+        mail         = parcel.readString() ?: "",
         profileImage = parcel.readString(),
         sessionToken = parcel.readString() ?: "",
-        isActive = parcel.readByte() != 0.toByte()
+        isActive     = parcel.readByte() != 0.toByte()
     )
 
     override fun writeToParcel(parcel: Parcel, flags: Int) {

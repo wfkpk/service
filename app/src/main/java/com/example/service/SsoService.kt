@@ -19,6 +19,7 @@ import com.example.service.network.ApiService
 import com.example.ssoapi.Account
 import com.example.ssoapi.AuthResult
 import com.example.ssoapi.IAuthCallback
+import com.example.ssoapi.SaResultData
 import com.example.ssoapi.sso
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -26,6 +27,7 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.future.future
 import kotlinx.coroutines.launch
+import java.util.concurrent.ConcurrentHashMap
 
 class SsoService : Service() {
 
@@ -87,43 +89,76 @@ class SsoService : Service() {
         return isMaxReached
     }
 
+    /**
+     * Stores pending login callbacks keyed by mail.
+     * login() stores the callback here so the async coroutine can
+     * deliver results without holding a direct reference in the binder thread.
+     */
+    private val pendingLoginCallbacks = ConcurrentHashMap<String, IAuthCallback>()
+
     private val binder = object : sso.Stub() {
 
-        override fun login(mail: String?, password: String?, callback: IAuthCallback?) {
+        override fun login(mail: String?, password: String?, callback: IAuthCallback?): SaResultData {
             Log.d(TAG, "login() called for: $mail")
+
+            // ── 1. Synchronous validation ──────────────────────────────────────────
             if (mail.isNullOrEmpty() || password.isNullOrEmpty() || callback == null) {
-                Log.w(TAG, "login() rejected: mail=${if (mail.isNullOrEmpty()) "MISSING" else "ok"}, password=${if (password.isNullOrEmpty()) "MISSING" else "ok"}, callback=${if (callback == null) "NULL" else "ok"}")
-                callback?.let { sendError(it, "Invalid parameters") }
-                return
+                val reason = buildString {
+                    if (mail.isNullOrEmpty())     append("mail missing ")
+                    if (password.isNullOrEmpty()) append("password missing ")
+                    if (callback == null)          append("callback null")
+                }.trim()
+                Log.w(TAG, "login() rejected: $reason")
+                return SaResultData.rejected("Invalid parameters: $reason")
             }
-            launchWithCallback(callback, "login") {
-                Log.d(TAG, "login() fetching token for: $mail")
-                val tokenResult = apiService.getToken(mail, password)
-                if (tokenResult is ApiService.ApiResult.Error) {
-                    Log.e(TAG, "login() token fetch failed: ${tokenResult.message}")
-                    sendError(callback, tokenResult.message)
-                    return@launchWithCallback
+
+            // ── 2. Store callback in the account-level pending map ─────────────────
+            pendingLoginCallbacks[mail] = callback
+            Log.d(TAG, "login() callback stored for: $mail")
+
+            // ── 3. Launch async login work ─────────────────────────────────────────
+            scope.launch {
+                val cb = pendingLoginCallbacks[mail] ?: run {
+                    Log.w(TAG, "login() callback gone for: $mail")
+                    return@launch
                 }
-                val token = (tokenResult as ApiService.ApiResult.Success).data
-                Log.d(TAG, "login() token received for guid: ${token.guid}")
+                try {
+                    Log.d(TAG, "login() fetching token for: $mail")
+                    val tokenResult = apiService.getToken(mail, password)
+                    if (tokenResult is ApiService.ApiResult.Error) {
+                        Log.e(TAG, "login() token fetch failed: ${tokenResult.message}")
+                        sendError(cb, tokenResult.message)
+                        return@launch
+                    }
+                    val token = (tokenResult as ApiService.ApiResult.Success).data
+                    Log.d(TAG, "login() token received for guid: ${token.guid}")
 
-                Log.d(TAG, "login() fetching account info for guid: ${token.guid}")
-                val infoResult = apiService.getAccountInfo(token.guid, token.sessionToken)
-                val profileImage = (infoResult as? ApiService.ApiResult.Success)?.data?.profileImage
-                val accountMail = (infoResult as? ApiService.ApiResult.Success)?.data?.mail ?: mail
-                Log.d(TAG, "login() account info received: mail=$accountMail, hasProfileImage=${profileImage != null}")
+                    Log.d(TAG, "login() fetching account info for guid: ${token.guid}")
+                    val infoResult = apiService.getAccountInfo(token.guid, token.sessionToken)
+                    val profileImage = (infoResult as? ApiService.ApiResult.Success)?.data?.profileImage
+                    val accountMail = (infoResult as? ApiService.ApiResult.Success)?.data?.mail ?: mail
+                    Log.d(TAG, "login() account info received: mail=$accountMail, hasProfileImage=${profileImage != null}")
 
-                if (checkMaxAccounts(token.guid)) {
-                    Log.w(TAG, "login() rejected: max accounts ($MAX_ACCOUNTS) reached")
-                    sendError(callback, "Maximum of $MAX_ACCOUNTS accounts reached")
-                    return@launchWithCallback
+                    if (checkMaxAccounts(token.guid)) {
+                        Log.w(TAG, "login() rejected: max accounts ($MAX_ACCOUNTS) reached")
+                        sendError(cb, "Maximum of $MAX_ACCOUNTS accounts reached")
+                        return@launch
+                    }
+
+                    val entity = AccountEntity(token.guid, accountMail, profileImage, token.sessionToken, true)
+                    saveAccount(entity)
+                    Log.d(TAG, "login() successful for $accountMail (guid=${token.guid})")
+                    sendSuccess(cb, "Login successful", entity.toAccount())
+                } catch (e: Exception) {
+                    Log.e(TAG, "Error during login", e)
+                    sendError(cb, e.message ?: "Unknown error")
+                } finally {
+                    pendingLoginCallbacks.remove(mail)
                 }
-
-                val entity = AccountEntity(token.guid, accountMail, profileImage, token.sessionToken, true)
-                saveAccount(entity)
-                Log.d(TAG, "login() successful for $accountMail (guid=${token.guid})")
-                sendSuccess(callback, "Login successful", entity.toAccount())
             }
+
+            // ── 4. Return accepted immediately ─────────────────────────────────────
+            return SaResultData.accepted()
         }
 
         override fun register(mail: String?, password: String?, callback: IAuthCallback?) {

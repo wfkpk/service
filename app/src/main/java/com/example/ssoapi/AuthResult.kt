@@ -11,13 +11,13 @@ data class AuthResult(
 
     constructor(parcel: Parcel) : this(
         success = parcel.readByte() != 0.toByte(),
-        fail = parcel.readByte() != 0.toByte(),
+        fail    = parcel.readByte() != 0.toByte(),
         message = parcel.readString() ?: ""
     )
 
     override fun writeToParcel(parcel: Parcel, flags: Int) {
         parcel.writeByte(if (success) 1 else 0)
-        parcel.writeByte(if (fail) 1 else 0)
+        parcel.writeByte(if (fail)    1 else 0)
         parcel.writeString(message)
     }
 
